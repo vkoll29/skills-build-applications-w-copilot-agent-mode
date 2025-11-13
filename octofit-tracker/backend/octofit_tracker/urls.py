@@ -4,6 +4,7 @@ from rest_framework import routers
 from .views import UserViewSet, TeamViewSet, ActivityViewSet, WorkoutViewSet, LeaderboardViewSet
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+import os
 
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
@@ -15,19 +16,28 @@ router.register(r'leaderboard', LeaderboardViewSet)
 
 @api_view(['GET'])
 def api_root(request, format=None):
+    # Prefer Codespace public URL when available to construct stable API links
+    codespace = os.environ.get('CODESPACE_NAME')
+    if codespace:
+        base = f"https://{codespace}-8000.app.github.dev/api"
+    else:
+        # fall back to request's host (works for localhost)
+        base = request.build_absolute_uri('/api').rstrip('/')
+
     return Response({
-        'users': request.build_absolute_uri('/users/'),
-        'teams': request.build_absolute_uri('/teams/'),
-        'activities': request.build_absolute_uri('/activities/'),
-        'workouts': request.build_absolute_uri('/workouts/'),
-        'leaderboard': request.build_absolute_uri('/leaderboard/'),
+        'users': f"{base}/users/",
+        'teams': f"{base}/teams/",
+        'activities': f"{base}/activities/",
+        'workouts': f"{base}/workouts/",
+        'leaderboard': f"{base}/leaderboard/",
     })
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', api_root, name='api_root'),
-    path('', include(router.urls)),
+    # Expose API under /api/ so endpoints match the requested format
+    path('api/', include(router.urls)),
 ]
 """octofit_tracker URL Configuration
 
